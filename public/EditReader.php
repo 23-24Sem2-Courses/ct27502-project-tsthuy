@@ -14,7 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $query_update = "UPDATE docgia SET MaDocGia = ?, TenDocGia = ?, DiaChi = ?, SoThe = ? WHERE maDocGia = ?";
     $statement_update = $pdo->prepare($query_update);
     $statement_update->execute([$MaDocGia, $TenDocGia, $DiaChi, $SoThe, $MaDocGia]);
-    header("Location: index.php");
+    header("Location: reader.php");
 }
 
 ?>

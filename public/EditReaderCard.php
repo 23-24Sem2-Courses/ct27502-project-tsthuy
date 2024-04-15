@@ -1,53 +1,27 @@
 <?php
-require_once __DIR__ . '/../src/bootstrap.php';
-require_once __DIR__ . '/../src/classes/ReaderCard.php';
-
-use QTDL\Project\ReaderCard;
-
-$readerCard = new ReaderCard($PDO);
-$SoThe = isset($_REQUEST['id']) ? $_REQUEST['id'] : null;
-if (empty($SoThe) || !($readerCard->find($SoThe))) {
-    redirect('/');
-}
-$errors = [];
+require_once 'connect.php';
+$SoThe = $_GET['id'];
+echo $SoThe;
+$query = "SELECT * FROM thethuvien WHERE SoThe = ?";
+$statement = $pdo->prepare($query);
+$statement->execute([$SoThe]);
+$readerCard = $statement->fetch(PDO::FETCH_ASSOC);
+print_r($readerCard);
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Lấy ID của thẻ thư viện từ form
-    $id = $_POST['id'] ?? null;
+    $SoThe = $_POST['id'];
+    $NgayBatDau = $_POST['NgayBatDau'];
+    $NgayHetHan = $_POST['NgayHetHan'];
+    $GhiChu = $_POST['GhiChu'];
 
-    // Kiểm tra xem ID có tồn tại và hợp lệ không
-    if ($id === null) {
-        // Xử lý lỗi nếu cần
-    } else {
-        // Tạo một thể hiện mới của lớp ReaderCard
-        $updatedReaderCard = new ReaderCard($PDO);
-
-        // Tìm thẻ thư viện dựa trên ID
-        $foundReaderCard = $updatedReaderCard->find($id);
-
-        // Kiểm tra xem thẻ thư viện có tồn tại không
-        if ($foundReaderCard) {
-            // Lấy dữ liệu từ form và cập nhật thẻ thư viện
-            $data = [
-                'NgayBatDau' => $_POST['NgayBatDau'] ?? '',
-                'NgayHetHan' => $_POST['NgayHetHan'] ?? '',
-                'GhiChu' => $_POST['GhiChu'] ?? ''
-            ];
-            $foundReaderCard->fill($data); // Đổ dữ liệu từ form vào thẻ thư viện
-            if ($foundReaderCard->update($data)) {
-                // Nếu cập nhật thành công, bạn có thể chuyển hướng hoặc hiển thị thông báo thành công
-                header("Location: thethuvien.php");
-                exit();
-            } else {
-                // Nếu cập nhật không thành công, bạn có thể chuyển hướng hoặc hiển thị thông báo lỗi
-            }
-        } else {
-            // Nếu không tìm thấy thẻ thư viện, bạn có thể chuyển hướng hoặc hiển thị thông báo lỗi
-        }
-    }
+    $query_update = "UPDATE thethuvien SET  NgayBatDau = ?, NgayHetHan = ?, GhiChu = ? WHERE SoThe = ?";
+    $statement_update = $pdo->prepare($query_update);
+    $statement_update->execute([$NgayBatDau, $NgayHetHan, $GhiChu, $SoThe]);
+    header("Location: thethuvien.php");
 }
-
 
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -112,33 +86,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <div class="card-body">
                 <form method="post" class="col-md-6 offset-md-3" enctype="multipart/form-data">
-                    <input type="hidden" name="id" value="<?= $readerCard->SoThe ?>">
+                    <input type="hidden" name="id" value="<?php echo $SoThe ?>">
                     <div class="form-group">
                         <label for="NgayBatDau">Ngày bắt đầu</label>
-                        <input type="date" name="NgayBatDau" class="form-control<?= isset($errors['NgayBatDau']) ? ' is-invalid' : '' ?>" id="NgayBatDau" value="<?= html_escape($readerCard->NgayBatDau) ?>" />
-                        <?php if (isset($errors['NgayBatDau'])) : ?>
-                            <span class="invalid-feedback">
-                                <strong><?= $errors['NgayBatDau'] ?></strong>
-                            </span>
-                        <?php endif ?>
+                        <input type="date" name="NgayBatDau" class="form-control<?= isset($errors['NgayBatDau']) ? ' is-invalid' : '' ?>" id="NgayBatDau" value="<?php echo $readerCard['NgayBatDau'] ?>" />
                     </div>
                     <div class="form-group">
                         <label for="NgayHetHan">Ngày hết hạn</label>
-                        <input type="date" name="NgayHetHan" class="form-control<?= isset($errors['NgayHetHan']) ? ' is-invalid' : '' ?>" id="NgayHetHan" value="<?= html_escape($readerCard->NgayHetHan) ?>" />
-                        <?php if (isset($errors['NgayHetHan'])) : ?>
-                            <span class="invalid-feedback">
-                                <strong><?= $errors['NgayHetHan'] ?></strong>
-                            </span>
-                        <?php endif ?>
+                        <input type="date" name="NgayHetHan" class="form-control<?= isset($errors['NgayHetHan']) ? ' is-invalid' : '' ?>" id="NgayHetHan" value="<?php echo $readerCard['NgayHetHan'] ?>" />
+
                     </div>
                     <div class="form-group">
                         <label for="GhiChu">Ghi chú</label>
-                        <textarea name="GhiChu" id="GhiChu" class="form-control<?= isset($errors['GhiChu']) ? ' is-invalid' : '' ?>" placeholder="Nhập ghi chú"><?= html_escape($readerCard->GhiChu) ?></textarea>
-                        <?php if (isset($errors['GhiChu'])) : ?>
-                            <span class="invalid-feedback">
-                                <strong><?= $errors['GhiChu'] ?></strong>
-                            </span>
-                        <?php endif ?>
+                        <textarea name="GhiChu" id="GhiChu" class="form-control<?= isset($errors['GhiChu']) ? ' is-invalid' : '' ?>" placeholder="Nhập ghi chú"><?php echo $readerCard['GhiChu'] ?></textarea>
                     </div>
                     <button type="submit" name="submit" class="btn btn-primary">Cập nhật thẻ thư viện</button>
                 </form>

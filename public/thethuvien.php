@@ -1,59 +1,44 @@
 <?php
-require_once __DIR__ . '/../src/bootstrap.php';
-
-use QTDL\Project\ReaderCard;
-
-$readerCard = new ReaderCard($PDO);
-$readerCards = $readerCard->getReaderCards();
-
-// Kiểm tra xem có yêu cầu POST được gửi đi không
+require_once "connect.php";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Xử lý dữ liệu khi form được gửi đi
-    $data = [
-        'NgayBatDau' => $_POST['NgayBatDau'] ?? '',
-        'NgayHetHan' => $_POST['NgayHetHan'] ?? '',
-        'GhiChu' => $_POST['GhiChu'] ?? ''
-    ];
-
-    // Gán dữ liệu từ form và thêm thẻ thư viện vào cơ sở dữ liệu
-    $readerCard->fill($data);
-    if ($readerCard->save()) {
-        header("Location: thethuvien.php"); // Chuyển hướng sau khi thêm thành công
-        exit();
-    } else {
-        echo "Đã xảy ra lỗi khi thêm thẻ thư viện.";
-    }
+    $SoThe = $_POST['SoThe'];
+    $NgayBatDau = $_POST['NgayBatDau'];
+    $NgayHetHan = $_POST['NgayHetHan'];
+    $GhiChu = $_POST['GhiChu'];
+    $sql = "INSERT INTO thethuvien (SoThe, NgayBatDau, NgayHetHan, GhiChu) VALUES (?,?,?,?)";
+    $statement = $pdo->prepare($sql);
+    $statement->execute([
+        $SoThe,
+        $NgayBatDau,
+        $NgayHetHan,
+        $GhiChu
+    ]);
 }
-
-// Kiểm tra xem có dữ liệu tìm kiếm được gửi đi không
-if (isset($_GET['keyword'])) {
-    // Lấy từ khóa tìm kiếm từ dữ liệu gửi đi
-    $keyword = $_GET['keyword'];
-    // Thực hiện truy vấn cơ sở dữ liệu với điều kiện WHERE để lọc kết quả
-    $readerCards = $readerCard->searchReaderCards($keyword);
-} else {
-    // Nếu không có dữ liệu tìm kiếm, hiển thị tất cả các thẻ thư viện
-    $readerCards = $readerCard->getReaderCards();
-}
-
-// Mặc định sắp xếp theo Ngày bắt đầu nếu không có dữ liệu sắp xếp được gửi đi
 $sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'NgayBatDau';
 
 // Kiểm tra xem có dữ liệu tìm kiếm được gửi đi không
 if (isset($_GET['keyword'])) {
-    // Lấy từ khóa tìm kiếm từ dữ liệu gửi đi
     $keyword = $_GET['keyword'];
-    // Thực hiện truy vấn cơ sở dữ liệu với điều kiện WHERE để lọc kết quả
-    $readerCards = $readerCard->searchReaderCards($keyword);
+    $sql = "SELECT * FROM thethuvien where SoThe LIKE ? or GhiChu LIKE ?";
+    $statement = $pdo->prepare($sql);
+    $statement->execute(['%' . $keyword . '%', '%' . $keyword . '%']);
+    $readerCards = $statement->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // Nếu không có dữ liệu tìm kiếm, hiển thị tất cả các thẻ thư viện và sắp xếp theo điều kiện được chọn
-    $readerCards = $readerCard->getReaderCardsSorted($sort_by);
+    $sql = "SELECT * FROM thethuvien";
+    $statement = $pdo->query($sql);
+    $readerCards = $statement->fetchAll(PDO::FETCH_ASSOC);
+}
+if (isset($_GET['sort_by'])) {
+    $sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'NgayBatDau';
+    $sql_sort = "SELECT * FROM thethuvien ORDER BY $sort_by";
+    $statement = $pdo->query($sql_sort);
+    $readerCards = $statement->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // sql nang cao
-require_once __DIR__ . '/../src/bootstrap.php';
+
 $sql = "SELECT total_library_cards_count() AS total_library_cards";
-$stmt = $PDO->prepare($sql);
+$stmt = $pdo->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetch(PDO::FETCH_ASSOC);
 $total_library_cards = $result['total_library_cards'];
@@ -107,6 +92,10 @@ $total_library_cards = $result['total_library_cards'];
         <div class="mt-4">
             <form id="add-reader-card-form" style="display: none;" action="/thethuvien.php" method="post">
                 <div class="form-group">
+                    <label for="NgayBatDau">Số Thẻ</label>
+                    <input type="text" class="form-control" id="SoThe" name="SoThe" required>
+                </div>
+                <div class="form-group">
                     <label for="NgayBatDau">Ngày bắt đầu:</label>
                     <input type="date" class="form-control" id="NgayBatDau" name="NgayBatDau" required>
                 </div>
@@ -136,17 +125,17 @@ $total_library_cards = $result['total_library_cards'];
                 <tbody>
                     <?php foreach ($readerCards as $readerCard) : ?>
                         <tr>
-                            <td><?= htmlspecialchars($readerCard->SoThe) ?></td>
-                            <td><?= htmlspecialchars($readerCard->NgayBatDau) ?></td>
-                            <td><?= htmlspecialchars($readerCard->NgayHetHan) ?></td>
-                            <td><?= htmlspecialchars($readerCard->GhiChu) ?></td>
+                            <td><?= htmlspecialchars($readerCard['SoThe']) ?></td>
+                            <td><?= htmlspecialchars($readerCard['NgayBatDau']) ?></td>
+                            <td><?= htmlspecialchars($readerCard['NgayHetHan']) ?></td>
+                            <td><?= htmlspecialchars($readerCard['GhiChu']) ?></td>
                             <td class="d-flex justify-content-center">
                                 <form class="form-group">
-                                    <a href="<?= '/EditReaderCard.php?id=' . $readerCard->getId() ?>" class="btn btn-xs btn-warning">
+                                    <a href="<?= '/EditReaderCard.php?id=' . htmlspecialchars($readerCard['SoThe']) ?>" class="btn btn-xs btn-warning">
                                         <i alt="Edit" class="fa fa-pencil"></i> Sửa</a>
                                 </form>
                                 <form class="form-group" action="/DeleteReaderCard.php" method="POST">
-                                    <input type="hidden" name="id" value="<?= $readerCard->getId() ?>">
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($readerCard['SoThe']) ?>">
                                     <button onclick="return confirm('Bạn có chắc chắn muốn xóa thẻ thư viện này không?');" type=" submit" class="btn btn-xs btn-danger" name="delete-readercard"> <i alt="Delete" class="fa fa-trash"></i> Xóa</button>
                                 </form>
                             </td>

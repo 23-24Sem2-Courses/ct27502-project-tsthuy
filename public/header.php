@@ -28,7 +28,7 @@
         <!-- Kết thúc dropdown danh sách thể loại sách -->
 
         <!-- Thêm phần Độc giả -->
-        <a href="index.php" class="hover:text-gray-300">Độc giả</a>
+        <a href="reader.php" class="hover:text-gray-300">Độc giả</a>
 
         <!-- Thêm phần Thẻ thư viện -->
         <a href="thethuvien.php" class="hover:text-gray-300">Thẻ thư viện</a>
